@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <algorithm>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <vector>
 #include <getopt.h>
 
 #include "CycleTimer.h"
@@ -66,6 +70,24 @@ bool verifyResult (int *gold, int *result, int width, int height) {
     return 1;
 }
 
+const std::string SERIAL_CSV_FILENAME = "serial_perf.csv";
+const std::string THREAD_CSV_FILENAME = "thread_perf_view2.csv";
+struct metric {
+    int thread;
+    double time_in_ms;
+    metric(int thread, double time): thread(thread), time_in_ms(time) {}
+};
+
+void save_result(std::vector<metric> mets, std::string filename) {
+    std::ofstream outfile(filename, std::ios::out | std::ios::trunc);
+    if(!outfile.is_open()) {std::cerr << "Cannot open file" + filename << std::endl;}
+
+    outfile << "numThread,timeInMs" << std::endl;
+    for(auto met : mets) {
+        outfile << met.thread << ", " << met.time_in_ms << std::endl;
+    }
+}
+
 int main(int argc, char** argv) {
 
     const unsigned int width = 1600;
@@ -126,7 +148,7 @@ int main(int argc, char** argv) {
     // Run the serial implementation.  Run the code three times and
     // take the minimum to get a good estimate.
     //
-
+    std::vector<metric> mets;
     double minSerial = 1e30;
     for (int i = 0; i < 5; ++i) {
        memset(output_serial, 0, width * height * sizeof(int));
@@ -135,7 +157,7 @@ int main(int argc, char** argv) {
         double endTime = CycleTimer::currentSeconds();
         minSerial = std::min(minSerial, endTime - startTime);
     }
-
+    mets.emplace_back(1, minSerial*1000);
     printf("[mandelbrot serial]:\t\t[%.3f] ms\n", minSerial * 1000);
     writePPMImage(output_serial, width, height, "mandelbrot-serial.ppm", maxIterations);
 
@@ -144,14 +166,20 @@ int main(int argc, char** argv) {
     //
 
     double minThread = 1e30;
-    for (int i = 0; i < 5; ++i) {
-      memset(output_thread, 0, width * height * sizeof(int));
-        double startTime = CycleTimer::currentSeconds();
-        mandelbrotThread(numThreads, x0, y0, x1, y1, width, height, maxIterations, output_thread);
-        double endTime = CycleTimer::currentSeconds();
-        minThread = std::min(minThread, endTime - startTime);
-    }
-
+    
+    // for(int j = 2; j < 9 ; j++) {
+        // numThreads = j;
+        for (int i = 0; i < 5; ++i) {
+            memset(output_thread, 0, width * height * sizeof(int));
+            double startTime = CycleTimer::currentSeconds();
+            mandelbrotThread(numThreads, x0, y0, x1, y1, width, height, maxIterations, output_thread);
+            double endTime = CycleTimer::currentSeconds();
+            minThread = std::min(minThread, endTime - startTime);
+        }
+        mets.emplace_back(numThreads, minThread*1000);
+        printf("Measuring performance of %d thread, speedup is %2fx\n", numThreads, minSerial/minThread);
+    // }
+    // save_result(mets, THREAD_CSV_FILENAME);
     printf("[mandelbrot thread]:\t\t[%.3f] ms\n", minThread * 1000);
     writePPMImage(output_thread, width, height, "mandelbrot-thread.ppm", maxIterations);
 

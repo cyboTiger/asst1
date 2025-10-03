@@ -22,6 +22,13 @@ extern void mandelbrotSerial(
     int maxIterations,
     int output[]);
 
+extern void mandelbrotStepSerial(
+    float x0, float y0, float x1, float y1,
+    int width, int height,
+    int startRow, int step,
+    int maxIterations,
+    int output[]);
+
 
 //
 // workerThreadStart --
@@ -34,8 +41,35 @@ void workerThreadStart(WorkerArgs * const args) {
     // to compute a part of the output image.  For example, in a
     // program that uses two threads, thread 0 could compute the top
     // half of the image and thread 1 could compute the bottom half.
+    
 
-    printf("Hello world from thread %d\n", args->threadId);
+    // Method 1: split into same chunks except for the last chunk
+
+    double startTime = CycleTimer::currentSeconds();
+    int numRows = args->height/args->numThreads;
+    int startRow = args->threadId*numRows;
+    if (args->threadId + 1 == args->numThreads) {
+        numRows = args->height - startRow;
+    }
+    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height,
+         startRow, numRows, 
+         args->maxIterations, args->output);
+    double endTime = CycleTimer::currentSeconds();
+    printf("Thread %d takes %.3f ms\n", args->threadId, (endTime-startTime)*1000);
+
+    
+    // Method 2: each thread i computes (k*numThread + i) for k = 0, 1, 2, 3, ... 
+    // in this way, each thread computation are evenly distributed
+
+    // double startTime = CycleTimer::currentSeconds();
+    // int startRow = args->threadId;
+    
+    // mandelbrotStepSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height,
+    //      startRow, args->numThreads, 
+    //      args->maxIterations, args->output);
+
+    // double endTime = CycleTimer::currentSeconds();
+    // printf("Thread %d takes %.3f ms\n", args->threadId, (endTime-startTime)*1000);
 }
 
 //
