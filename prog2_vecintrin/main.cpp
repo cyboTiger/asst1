@@ -251,7 +251,7 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
   int rem = N % VECTOR_WIDTH;
-  N += rem;
+  N += (VECTOR_WIDTH-rem);
   int numVecs = N / VECTOR_WIDTH;
 
   
@@ -262,7 +262,7 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
     __cs149_vec_int exponents_vec;
     __cs149_vec_float output_vec;
 
-    __cs149_mask mask_all = _cs149_init_ones();
+    __cs149_mask mask_all = _cs149_init_ones(i == numVecs-1 ? rem : VECTOR_WIDTH);
     __cs149_vec_int vec_zero;
     __cs149_vec_int vec_one;
     __cs149_vec_float vec_clamped;
