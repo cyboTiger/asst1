@@ -120,6 +120,8 @@ int main(int argc, char** argv) {
     }
     // end parsing of commandline options
 
+    printf("X axis: [%.2f, %.2f]\nY axis: [%.2f, %.2f]\n", x0, x1, y0, y1);
+    
     int *output_serial = new int[width*height];
     int *output_ispc = new int[width*height];
     int *output_ispc_tasks = new int[width*height];
